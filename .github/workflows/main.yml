@@ -1,30 +1,36 @@
-name: Deploy to GitHub Pages
+name: CI Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: Use Node.js 18.x
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: 18
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build
+      - name: Run build
         run: npm run build
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      # Optional: Add tests here if you have any
+      # - name: Run tests
+      #   run: npm test
+
+      - name: Upload production build artifacts
+        uses: actions/upload-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          name: production-build
+          path: dist/
