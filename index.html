@@ -18,24 +18,32 @@
       align-items: flex-end;
       padding: 20px;
       box-sizing: border-box;
+      flex-direction: column;
     }
 
-    /* Chat container */
+    /* Container holds monster and chat */
     #container {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90%;
-      max-width: 600px;
       background: rgba(0, 0, 0, 0.7);
       border-radius: 15px;
-      padding: 15px;
+      width: 90%;
+      max-width: 600px;
+      padding: 20px;
       box-sizing: border-box;
       box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
       display: flex;
       flex-direction: column;
-      color: white;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    /* Monster image */
+    #monster-image {
+      width: 160px;
+      max-width: 80vw;
+      user-select: none;
+      pointer-events: none;
+      margin-bottom: 15px;
+      image-rendering: pixelated;
     }
 
     /* Chat messages box */
@@ -46,8 +54,9 @@
       border-radius: 10px;
       padding: 10px;
       font-size: 16px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       box-shadow: inset 0 0 5px #00ff00aa;
+      width: 100%;
       scroll-behavior: smooth;
     }
 
@@ -60,6 +69,7 @@
     #user-input-container {
       display: flex;
       gap: 10px;
+      width: 100%;
     }
 
     #user-input {
@@ -69,4 +79,78 @@
       border: none;
       border-radius: 8px;
       outline: none;
-      ba
+      background: #111;
+      color: white;
+    }
+
+    #send-button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #39a839;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    #send-button:hover {
+      background: #2f842f;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <img id="monster-image" src="https://opengameart.org/sites/default/files/CuteMonster.png" alt="Cute Monster" />
+    <div id="chat-box"></div>
+    <div id="user-input-container">
+      <input id="user-input" type="text" placeholder="Type your message..." autocomplete="off" />
+      <button id="send-button">Send</button>
+    </div>
+  </div>
+
+  <script>
+    console.log("monster.js loaded");
+
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+
+    function addMessage(sender, text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.textContent = `${sender}: ${text}`;
+      msgDiv.style.color = sender === 'Monster' ? '#aaffaa' : '#eee';
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Greet on load
+    addMessage('Monster', "Hello, I'm your AI Monster. Talk to me!");
+
+    sendButton.addEventListener('click', () => {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      addMessage('You', text);
+      userInput.value = '';
+
+      // Simple bot response logic (expand as you want)
+      setTimeout(() => {
+        let reply = "I don't understand that yet...";
+        const ltext = text.toLowerCase();
+        if (ltext.includes('hello')) reply = "Hi there!";
+        else if (ltext.includes('how are you')) reply = "I’m lurking in the shadows.";
+        else if (ltext.includes('monster')) reply = "That’s me! What do you want to know?";
+        addMessage('Monster', reply);
+      }, 700);
+    });
+
+    userInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendButton.click();
+      }
+    });
+  </script>
+</body>
+</html>
