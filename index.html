@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Monster Chat Demo</title>
+  <title>AI Monster Chat Demo — Smarter Learning</title>
   <style>
     /* Galaxy background */
     body {
@@ -70,6 +70,7 @@
       display: flex;
       gap: 10px;
       width: 100%;
+      align-items: center;
     }
 
     #user-input {
@@ -97,105 +98,168 @@
     #send-button:hover {
       background: #2f842f;
     }
+
+    #reset-button {
+      background: #ff5555;
+      margin-left: 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: white;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+
+    #reset-button:hover {
+      background: #cc4444;
+    }
   </style>
 </head>
 <body>
   <div id="container">
-    <img id="monster-image" src="https://i.imgur.com/6XQYbqH.png" alt="Cute Monster" />
+    <img id="monster-image" src="https://i.imgur.com/VtDjUOw.png" alt="Cute Monster" />
     <div id="chat-box"></div>
     <div id="user-input-container">
       <input id="user-input" type="text" placeholder="Type your message..." autocomplete="off" />
       <button id="send-button">Send</button>
+      <button id="reset-button" title="Forget everything">Forget</button>
     </div>
   </div>
 
   <script>
-  console.log("monster.js loaded with learning");
+    console.log("monster.js loaded with improved learning");
 
-  const chatBox = document.getElementById('chat-box');
-  const userInput = document.getElementById('user-input');
-  const sendButton = document.getElementById('send-button');
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const resetButton = document.getElementById('reset-button');
 
-  // Load memory from sessionStorage or start fresh
-  let learnedResponses = JSON.parse(sessionStorage.getItem('learnedResponses') || '{}');
+    // Load memory or empty object
+    let learnedResponses = JSON.parse(localStorage.getItem('learnedResponses') || '{}');
+    let expectingTeaching = false;
+    let lastUserInput = '';
 
-  // Flag to track if we are expecting a learning reply from the user
-  let expectingTeaching = false;
-  let lastUserQuestion = '';
-
-  const defaultReplies = [
-    "I'm lurking in the shadows.",
-    "That's me! What do you want to know?",
-    "Hmm... tell me more!",
-    "I love to chat with you!",
-    "I don't quite get that yet.",
-    "Can you say that again differently?",
-    "You’re interesting!",
-    "Let’s talk about something fun!",
-    "What else would you like to know?",
-    "I'm learning every day."
-  ];
-
-  function addMessage(sender, text) {
-    const msgDiv = document.createElement('div');
-    msgDiv.textContent = `${sender}: ${text}`;
-    msgDiv.style.color = sender === 'Monster' ? '#aaffaa' : '#eee';
-    chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }
-
-  function saveMemory() {
-    sessionStorage.setItem('learnedResponses', JSON.stringify(learnedResponses));
-  }
-
-  // Greet on load
-  addMessage('Monster', "Hello, I'm your AI Monster. Talk to me!");
-
-  sendButton.addEventListener('click', () => {
-    const text = userInput.value.trim();
-    if (!text) return;
-    addMessage('You', text);
-    userInput.value = '';
-
-    if (expectingTeaching) {
-      // We expect user to teach a reply
-      learnedResponses[lastUserQuestion] = text;
-      saveMemory();
-      addMessage('Monster', `Got it! I'll remember that when you say "${lastUserQuestion}" again.`);
-      expectingTeaching = false;
-      lastUserQuestion = '';
-      return;
+    function normalize(str) {
+      return str.trim().toLowerCase();
     }
 
-    // Check if monster already knows a reply for this exact message
-    const lowerText = text.toLowerCase();
-
-    if (learnedResponses[lowerText]) {
-      addMessage('Monster', learnedResponses[lowerText]);
-      return;
+    // Pick a random item from array
+    function randomChoice(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
     }
 
-    // Simple keyword replies
-    if (lowerText.includes('hello') || lowerText.includes('hi')) {
-      addMessage('Monster', "Hi there! Nice to meet you.");
-    } else if (lowerText.includes('how are you')) {
-      addMessage('Monster', "I'm doing great, thanks for asking!");
-    } else if (lowerText.includes('monster')) {
-      addMessage('Monster', "Yep, that's me! Your friendly AI Monster.");
-    } else if (lowerText.includes('help')) {
-      addMessage('Monster', "How can I assist you today?");
-    } else {
-      // Unknown input - ask user to teach
+    function addMessage(sender, text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.textContent = `${sender}: ${text}`;
+      msgDiv.style.color = sender === 'Monster' ? '#aaffaa' : '#eee';
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function saveMemory() {
+      localStorage.setItem('learnedResponses', JSON.stringify(learnedResponses));
+    }
+
+    function knownReply(input) {
+      const nInput = normalize(input);
+      if (learnedResponses[nInput]) {
+        const replies = learnedResponses[nInput];
+        if (Array.isArray(replies) && replies.length > 0) {
+          return randomChoice(replies);
+        }
+        return replies;
+      }
+      return null;
+    }
+
+    // Default replies for common keywords
+    const defaultReplies = [
+      "I'm lurking in the shadows.",
+      "That's me! What do you want to know?",
+      "Hmm... tell me more!",
+      "I love to chat with you!",
+      "I don't quite get that yet.",
+      "Can you say that again differently?",
+      "You’re interesting!",
+      "Let’s talk about something fun!",
+      "What else would you like to know?",
+      "I'm learning every day."
+    ];
+
+    // Check for keywords in input, return reply or null
+    function keywordReply(text) {
+      const t = normalize(text);
+      if (t.includes('hello') || t.includes('hi')) return "Hi there! Nice to meet you.";
+      if (t.includes('how are you')) return "I'm doing great, thanks for asking!";
+      if (t.includes('monster')) return "Yep, that's me! Your friendly AI Monster.";
+      if (t.includes('help')) return "How can I assist you today?";
+      if (t.includes('name')) return "I'm your AI Monster, your new friend!";
+      if (t.includes('love')) return "I love our chats!";
+      if (t.includes('joke')) return "Why did the monster go to school? Because he wanted to be a little smarter!";
+      return null;
+    }
+
+    // Greet on load
+    addMessage('Monster', "Hello, I'm your AI Monster. Talk to me!");
+
+    sendButton.addEventListener('click', () => {
+      const text = userInput.value.trim();
+      if (!text) return;
+      addMessage('You', text);
+      userInput.value = '';
+
+      if (expectingTeaching) {
+        // Teach mode: add reply to learned responses
+        const key = normalize(lastUserInput);
+        if (!learnedResponses[key]) {
+          learnedResponses[key] = [];
+        }
+        learnedResponses[key].push(text);
+        saveMemory();
+        addMessage('Monster', `Got it! I'll remember that.`);
+        expectingTeaching = false;
+        lastUserInput = '';
+        return;
+      }
+
+      // Check memory
+      const replyFromMemory = knownReply(text);
+      if (replyFromMemory) {
+        addMessage('Monster', replyFromMemory);
+        return;
+      }
+
+      // Check keywords
+      const replyFromKeyword = keywordReply(text);
+      if (replyFromKeyword) {
+        addMessage('Monster', replyFromKeyword);
+        return;
+      }
+
+      // Else: ask user to teach
       addMessage('Monster', "I don't know how to respond to that yet. How should I reply?");
       expectingTeaching = true;
-      lastUserQuestion = lowerText;
-    }
-  });
+      lastUserInput = text;
+    });
 
-  userInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      sendButton.click();
-    }
-  });
-</script>
+    userInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendButton.click();
+      }
+    });
+
+    resetButton.addEventListener('click', () => {
+      if (confirm('Are you sure you want me to forget everything you taught me?')) {
+        localStorage.removeItem('learnedResponses');
+        learnedResponses = {};
+        expectingTeaching = false;
+        lastUserInput = '';
+        addMessage('Monster', 'Memory cleared. I forgot everything you taught me.');
+      }
+    });
+  </script>
+</body>
+</html>
