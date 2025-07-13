@@ -1,116 +1,205 @@
-import React, { useState, useEffect } from 'react';
-import './App.css';
+import React, { useState, useEffect, useRef } from 'react';
+import './app.css'; // Make sure your CSS is imported
 
+const responses = [
+  { keywords: ['hello', 'hi', 'hey'], replies: [
+    "Hellooo, brave soul!",
+    "Heeeeey there, what's on your mind?",
+    "Greetings, friend. Speak, I will listen."
+  ]},
+  { keywords: ['how are you', 'how is it going'], replies: [
+    "I am awake, lurking, always watching.",
+    "Better when you talk to me, im learning.",
+    "Stirring in the darkness as usual."
+  ]},
+  { keywords: ['monster', 'you'], replies: [
+    "I am the shadow beneath your bed.",
+    "They call me Monster, but I am simply curious.",
+    "Here to listen and maybe scare a little."
+  ]},
+  { keywords: ['help', 'assist', 'support'], replies: [
+    "I can guide you, if you ask the right questions.",
+    "Help is what I offer in my own way.",
+    "Tell me your troubles; perhaps I can ease them."
+  ]},
+  { keywords: ['bye', 'goodbye', 'see you'], replies: [
+    "Until next time, wanderer.",
+    "I’ll be here, waiting in the shadows.",
+    "Farewell... for now."
+  ]},
+];
 
-const baseStats = {
-  trust: 0.1,
-  curiosity: 0.1,
-  mood: 0.1,
-  energy: 0.1,
-};
+const fallbackReplies = [
+  "Tell me more...",
+  "I don't quite understand, but I’m intrigued.",
+  "That sounds mysterious.",
+  "Go on...",
+  "Hmmm... interesting.",
+  "Speak your mind, I am patient."
+  "UUUHHHHH." 
+  " Idk......"
+];
 
-function App() {
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState(() => {
-    const savedMessages = localStorage.getItem('monsterMessages');
-    return savedMessages ? JSON.parse(savedMessages) : [];
-  });
-  const [stats, setStats] = useState(() => {
-    const saved = localStorage.getItem('monsterStats');
-    return saved ? JSON.parse(saved) : baseStats;
-  });
+function getMonsterReply(input) {
+  const lowerInput = input.toLowerCase();
+  for (const entry of responses) {
+    if (entry.keywords.some(keyword => lowerInput.includes(keyword))) {
+      const reply = entry.replies[Math.floor(Math.random() * entry.replies.length)];
+      return reply;
+    }
+  }
+  return fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
+}
 
-  // Save messages and stats to localStorage whenever they change
+export default function App() {
+  const [messages, setMessages] = useState([
+    { sender: 'monster', text: "Hello, I'm your AI Monster. Talk to me!" }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const chatBoxRef = useRef(null);
+
+  // Scroll to bottom on new messages
   useEffect(() => {
-    localStorage.setItem('monsterStats', JSON.stringify(stats));
-  }, [stats]);
-
-  useEffect(() => {
-    localStorage.setItem('monsterMessages', JSON.stringify(messages));
+    if(chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
   }, [messages]);
 
-  const handleSend = () => {
-    const trimmed = input.trim();
+  const sendMessage = () => {
+    const trimmed = inputValue.trim();
     if (!trimmed) return;
 
-    const newMessages = [...messages, { from: 'user', text: trimmed }];
-    const monsterReply = getMonsterResponse(trimmed);
-    newMessages.push({ from: 'monster', text: monsterReply });
-    setMessages(newMessages);
-    setInput('');
+    // Add user's message
+    setMessages(prev => [...prev, { sender: 'user', text: trimmed }]);
+    setInputValue('');
+
+    // Simulate monster reply after delay
+    setTimeout(() => {
+      const reply = getMonsterReply(trimmed);
+      setMessages(prev => [...prev, { sender: 'monster', text: reply }]);
+    }, 800);
   };
 
-  const getMonsterResponse = (text) => {
-    const lowered = text.toLowerCase();
-    let response = "...";
-    const newStats = { ...stats };
-
-    if (lowered.includes('hello') || lowered.includes('hi')) {
-      newStats.trust += 0.1;
-      response = "Lumimon chirps: 'Hi! I’m glad you’re here.'";
-    } else if (lowered.includes('i love you')) {
-      newStats.trust += 0.2;
-      newStats.mood += 0.1;
-      response = "Lumimon sparkles: 'That means a lot... I feel warmer now.'";
-    } else if (lowered.includes('train') || lowered.includes('learn')) {
-      newStats.curiosity += 0.2;
-      response = "Lumimon’s eyes light up: 'Yes! Teach me!'";
-    } else if (lowered.includes('bad') || lowered.includes('hate')) {
-      newStats.trust -= 0.2;
-      newStats.mood -= 0.2;
-      response = "Lumimon dims slightly: 'That... hurt. Did I do something wrong?'";
-    } else {
-      response = "Lumimon tilts its head: 'Hmm... I'm not sure what that means yet.'";
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
     }
-
-    // Clamp stats between 0 and 1, round to 3 decimals
-    Object.keys(newStats).forEach(k => {
-      newStats[k] = Math.max(0, Math.min(1, parseFloat(newStats[k].toFixed(3))));
-    });
-
-    setStats(newStats);
-    return response;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 text-white p-4 flex flex-col items-center">
-      <h1 className="text-3xl font-bold mb-2">🌟 Lumimon Companion</h1>
-      <p className="text-sm text-gray-300 mb-4">Your AI Monster remembers how you treat it.</p>
-      <div className="bg-black bg-opacity-30 p-4 rounded-xl w-full max-w-md flex flex-col">
-        <div className="mb-4 h-64 overflow-y-auto flex flex-col gap-2">
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={msg.from === 'user' ? 'text-right text-blue-200' : 'text-left text-pink-200'}
-            >
-              <span>{msg.text}</span>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <input
-            className="flex-1 p-2 rounded bg-white text-black"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Say something to Lumimon..."
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          />
-          <button
-            className="bg-purple-600 hover:bg-purple-800 px-4 py-2 rounded"
-            onClick={handleSend}
+    <div id="container" style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      padding: '20px',
+      boxSizing: 'border-box',
+      background: 'rgba(0, 0, 0, 0.35)',
+      color: 'white',
+      fontFamily: 'Arial, sans-serif',
+      backgroundImage: "url('./images/background.jpg')",
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: 'center center',
+      backgroundAttachment: 'fixed',
+      backgroundSize: 'cover',
+    }}>
+      <img
+        id="monster-image"
+        src="./images/monster.png"
+        alt="AI Monster"
+        style={{
+          width: '200px',
+          maxWidth: '80vw',
+          marginBottom: '20px',
+          userSelect: 'none',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div
+        id="chat-box"
+        ref={chatBoxRef}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        style={{
+          width: '90%',
+          maxWidth: '600px',
+          height: '250px',
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          borderRadius: '10px',
+          padding: '15px',
+          overflowY: 'auto',
+          marginBottom: '10px',
+          fontSize: '16px',
+          lineHeight: 1.4,
+          boxShadow: '0 0 15px rgba(0, 255, 0, 0.3)',
+        }}
+      >
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            style={{ 
+              marginBottom: '8px', 
+              color: msg.sender === 'monster' ? '#aaffaa' : '#dddddd' 
+            }}
           >
-            Send
-          </button>
-        </div>
-        <div className="mt-4 text-sm space-y-1">
-          <p>❤️ Trust: {stats.trust.toFixed(2)}</p>
-          <p>🧠 Curiosity: {stats.curiosity.toFixed(2)}</p>
-          <p>😊 Mood: {stats.mood.toFixed(2)}</p>
-          <p>⚡ Energy: {stats.energy.toFixed(2)}</p>
-        </div>
+            <strong>{msg.sender === 'monster' ? 'Monster' : 'You'}: </strong>{msg.text}
+          </div>
+        ))}
+      </div>
+
+      <div
+        id="user-input-container"
+        style={{
+          width: '90%',
+          maxWidth: '600px',
+          display: 'flex',
+          boxShadow: '0 0 10px rgba(0, 255, 0, 0.3)',
+          borderRadius: '8px',
+          overflow: 'hidden',
+        }}
+      >
+        <input
+          id="user-input"
+          type="text"
+          placeholder="Type your message..."
+          aria-label="Type your message here"
+          autoComplete="off"
+          value={inputValue}
+          onChange={e => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          style={{
+            flexGrow: 1,
+            padding: '12px 16px',
+            fontSize: '16px',
+            border: 'none',
+            outline: 'none',
+            backgroundColor: '#111',
+            color: '#eee',
+          }}
+        />
+        <button
+          id="send-button"
+          aria-label="Send message"
+          onClick={sendMessage}
+          style={{
+            padding: '0 24px',
+            fontSize: '16px',
+            backgroundColor: '#39a839',
+            border: 'none',
+            color: 'white',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s ease',
+          }}
+          onMouseOver={e => e.currentTarget.style.backgroundColor = '#2f842f'}
+          onMouseOut={e => e.currentTarget.style.backgroundColor = '#39a839'}
+        >
+          Send
+        </button>
       </div>
     </div>
   );
 }
-
-export default App;
