@@ -101,7 +101,7 @@
 </head>
 <body>
   <div id="container">
-    <img id="monster-image" src="https://opengameart.org/sites/default/files/CuteMonster.png" alt="Cute Monster" />
+    <img id="monster-image" src="https://i.imgur.com/6XQYbqH.png" alt="Cute Monster" />
     <div id="chat-box"></div>
     <div id="user-input-container">
       <input id="user-input" type="text" placeholder="Type your message..." autocomplete="off" />
@@ -110,47 +110,92 @@
   </div>
 
   <script>
-    console.log("monster.js loaded");
+  console.log("monster.js loaded with learning");
 
-    const chatBox = document.getElementById('chat-box');
-    const userInput = document.getElementById('user-input');
-    const sendButton = document.getElementById('send-button');
+  const chatBox = document.getElementById('chat-box');
+  const userInput = document.getElementById('user-input');
+  const sendButton = document.getElementById('send-button');
 
-    function addMessage(sender, text) {
-      const msgDiv = document.createElement('div');
-      msgDiv.textContent = `${sender}: ${text}`;
-      msgDiv.style.color = sender === 'Monster' ? '#aaffaa' : '#eee';
-      chatBox.appendChild(msgDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
+  // Load memory from sessionStorage or start fresh
+  let learnedResponses = JSON.parse(sessionStorage.getItem('learnedResponses') || '{}');
+
+  // Flag to track if we are expecting a learning reply from the user
+  let expectingTeaching = false;
+  let lastUserQuestion = '';
+
+  const defaultReplies = [
+    "I'm lurking in the shadows.",
+    "That's me! What do you want to know?",
+    "Hmm... tell me more!",
+    "I love to chat with you!",
+    "I don't quite get that yet.",
+    "Can you say that again differently?",
+    "You’re interesting!",
+    "Let’s talk about something fun!",
+    "What else would you like to know?",
+    "I'm learning every day."
+  ];
+
+  function addMessage(sender, text) {
+    const msgDiv = document.createElement('div');
+    msgDiv.textContent = `${sender}: ${text}`;
+    msgDiv.style.color = sender === 'Monster' ? '#aaffaa' : '#eee';
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function saveMemory() {
+    sessionStorage.setItem('learnedResponses', JSON.stringify(learnedResponses));
+  }
+
+  // Greet on load
+  addMessage('Monster', "Hello, I'm your AI Monster. Talk to me!");
+
+  sendButton.addEventListener('click', () => {
+    const text = userInput.value.trim();
+    if (!text) return;
+    addMessage('You', text);
+    userInput.value = '';
+
+    if (expectingTeaching) {
+      // We expect user to teach a reply
+      learnedResponses[lastUserQuestion] = text;
+      saveMemory();
+      addMessage('Monster', `Got it! I'll remember that when you say "${lastUserQuestion}" again.`);
+      expectingTeaching = false;
+      lastUserQuestion = '';
+      return;
     }
 
-    // Greet on load
-    addMessage('Monster', "Hello, I'm your AI Monster. Talk to me!");
+    // Check if monster already knows a reply for this exact message
+    const lowerText = text.toLowerCase();
 
-    sendButton.addEventListener('click', () => {
-      const text = userInput.value.trim();
-      if (!text) return;
+    if (learnedResponses[lowerText]) {
+      addMessage('Monster', learnedResponses[lowerText]);
+      return;
+    }
 
-      addMessage('You', text);
-      userInput.value = '';
+    // Simple keyword replies
+    if (lowerText.includes('hello') || lowerText.includes('hi')) {
+      addMessage('Monster', "Hi there! Nice to meet you.");
+    } else if (lowerText.includes('how are you')) {
+      addMessage('Monster', "I'm doing great, thanks for asking!");
+    } else if (lowerText.includes('monster')) {
+      addMessage('Monster', "Yep, that's me! Your friendly AI Monster.");
+    } else if (lowerText.includes('help')) {
+      addMessage('Monster', "How can I assist you today?");
+    } else {
+      // Unknown input - ask user to teach
+      addMessage('Monster', "I don't know how to respond to that yet. How should I reply?");
+      expectingTeaching = true;
+      lastUserQuestion = lowerText;
+    }
+  });
 
-      // Simple bot response logic (expand as you want)
-      setTimeout(() => {
-        let reply = "I don't understand that yet...";
-        const ltext = text.toLowerCase();
-        if (ltext.includes('hello')) reply = "Hi there!";
-        else if (ltext.includes('how are you')) reply = "I’m lurking in the shadows.";
-        else if (ltext.includes('monster')) reply = "That’s me! What do you want to know?";
-        addMessage('Monster', reply);
-      }, 700);
-    });
-
-    userInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        sendButton.click();
-      }
-    });
-  </script>
-</body>
-</html>
+  userInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendButton.click();
+    }
+  });
+</script>
