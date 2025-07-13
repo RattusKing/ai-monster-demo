@@ -1,14 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AI Monster Demo</title>
-    <script type="module" crossorigin src="/assets/index-9c6f2af6.js"></script>
-    <link rel="stylesheet" href="/assets/index-a63ad090.css">
-  </head>
-  <body>
-    <div id="root"></div>
-    
-  </body>
+<head>
+<meta charset="UTF-8" />
+<title>AI Monster Demo Chat</title>
+<style>
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    background: url('background.jpg') no-repeat center center fixed;
+    background-size: cover;
+    font-family: Arial, sans-serif;
+    color: white;
+  }
+  #container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  #monster-image {
+    width: 200px;
+    margin-bottom: 20px;
+  }
+  #chat-box {
+    width: 90%;
+    max-width: 600px;
+    height: 250px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 10px;
+    padding: 15px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    font-size: 16px;
+  }
+  #user-input-container {
+    width: 90%;
+    max-width: 600px;
+    display: flex;
+  }
+  #user-input {
+    flex-grow: 1;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 6px 0 0 6px;
+    border: none;
+    outline: none;
+  }
+  #send-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: #5a9;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 0 6px 6px 0;
+  }
+  #send-button:hover {
+    background: #487;
+  }
+</style>
+</head>
+<body>
+  <div id="container">
+    <img id="monster-image" src="monster.png" alt="Monster" />
+    <div id="chat-box"></div>
+    <div id="user-input-container">
+      <input id="user-input" type="text" placeholder="Type your message..." />
+      <button id="send-button">Send</button>
+    </div>
+  </div>
+
+<script src="monster.js"></script>
+</body>
 </html>
