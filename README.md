@@ -34,25 +34,21 @@ A production-ready Discord-integrated avatar tool for PNGTubers and VTubers. Upl
 
 ## 🚀 Quick Start
 
-### **For VTubers (Using the Service)**
+### **For Streamers/VTubers (Using the Service)**
 
-#### **Option 1: Discord Commands** (Easiest!)
-1. Join a Discord server with EchoSprite bot
-2. Type `/avatar upload` and attach your images
-3. Bot responds with your OBS URL
-4. Add URL to OBS as Browser Source
-5. Join Discord voice and stream!
+#### 📚 **[→ COMPLETE STREAMER GUIDE](STREAMER-GUIDE.md)** ← Start Here!
 
-[→ Full Discord Commands Guide](DISCORD-COMMANDS.md)
+**Quick Setup (5 minutes):**
+1. **Add bot to Discord:** [Get invite link from Discord Developer Portal]
+2. **Upload avatars:** Type `/avatar upload` in Discord
+3. **Get your URL:** Type `/avatar view`
+4. **Add to OBS:** Browser Source with your URL
+5. **Stream!** Avatar reacts when you talk!
 
-#### **Option 2: Web Dashboard**
-1. Visit https://rattusking.github.io/echosprite/
-2. Click "Login with Discord"
-3. Upload 4 avatar images (idle, talking, muted, deafened)
-4. Copy Individual or Group URL
-5. Add to OBS and stream!
-
-[→ Ready-to-Use Guide](READY-TO-USE.md)
+#### **Additional Guides:**
+- [→ Discord Commands Reference](DISCORD-COMMANDS.md)
+- [→ Profile System Guide](PROFILES-GUIDE.md) - Multiple themes/outfits
+- [→ Ready-to-Use Web Dashboard](READY-TO-USE.md)
 
 ---
 
@@ -298,10 +294,15 @@ Contributions welcome! Please:
 
 ## 📞 Support & Documentation
 
-- **Discord Commands Guide**: [DISCORD-COMMANDS.md](DISCORD-COMMANDS.md)
+### **For Streamers:**
+- **Complete Streamer Guide**: [STREAMER-GUIDE.md](STREAMER-GUIDE.md) ⭐ **Start here!**
+- **Discord Commands**: [DISCORD-COMMANDS.md](DISCORD-COMMANDS.md)
+- **Profile System**: [PROFILES-GUIDE.md](PROFILES-GUIDE.md)
+- **Web Dashboard**: [READY-TO-USE.md](READY-TO-USE.md)
+
+### **For Developers:**
 - **Production Deployment**: [PRODUCTION-DEPLOY.md](PRODUCTION-DEPLOY.md)
 - **Discord Setup**: [SETUP-DISCORD.md](SETUP-DISCORD.md)
-- **User Guide**: [READY-TO-USE.md](READY-TO-USE.md)
 - **Feature Status**: [WHATS-BUILT.md](WHATS-BUILT.md)
 
 ---
