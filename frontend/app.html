@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoSprite - Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="app-page">
+    <div class="container">
+        <header class="app-header">
+            <h1 class="logo">✨ EchoSprite</h1>
+            <nav>
+                <a href="index.html" class="btn btn-text">Home</a>
+            </nav>
+        </header>
+
+        <main class="dashboard">
+            <!-- Step 1: Upload Images -->
+            <section class="card">
+                <h2>📸 Step 1: Upload Your Avatar</h2>
+                <div class="upload-grid">
+                    <div class="upload-box">
+                        <label for="idleUpload" class="upload-label">
+                            <div class="upload-preview" id="idlePreview">
+                                <p>Click to upload<br><strong>Idle PNG</strong></p>
+                            </div>
+                        </label>
+                        <input type="file" id="idleUpload" accept="image/png" style="display: none;">
+                    </div>
+                    <div class="upload-box">
+                        <label for="talkingUpload" class="upload-label">
+                            <div class="upload-preview" id="talkingPreview">
+                                <p>Click to upload<br><strong>Talking PNG</strong></p>
+                            </div>
+                        </label>
+                        <input type="file" id="talkingUpload" accept="image/png" style="display: none;">
+                    </div>
+                </div>
+                <p class="help-text">💡 Tip: Use transparent PNGs for best results!</p>
+            </section>
+
+            <!-- Step 2: Test Mic Reactivity -->
+            <section class="card">
+                <h2>🎙️ Step 2: Test Mic Reactivity</h2>
+                <div class="preview-container">
+                    <div class="avatar-preview" id="avatarPreview">
+                        <p class="placeholder-text">Your avatar will appear here</p>
+                    </div>
+                    <div class="mic-controls">
+                        <button id="startMicTest" class="btn btn-primary">Start Mic Test</button>
+                        <button id="stopMicTest" class="btn btn-secondary" style="display: none;">Stop Mic Test</button>
+                        <div class="mic-indicator">
+                            <p>Mic Level:</p>
+                            <div class="level-bar">
+                                <div class="level-fill" id="micLevel"></div>
+                            </div>
+                            <p class="status-text" id="statusText">Not listening</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings">
+                    <label>
+                        Sensitivity:
+                        <input type="range" id="sensitivity" min="0" max="100" value="30">
+                        <span id="sensitivityValue">30</span>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Step 3: OBS Browser Source -->
+            <section class="card">
+                <h2>📺 Step 3: OBS Browser Source</h2>
+                <p>Copy this URL and add it as a Browser Source in OBS:</p>
+                <div class="url-box">
+                    <input type="text" id="obsUrl" readonly value="">
+                    <button id="copyUrl" class="btn btn-primary">Copy URL</button>
+                </div>
+                <p class="help-text">
+                    💡 In OBS: Sources → Add → Browser → Paste URL<br>
+                    Recommended size: 1920x1080 | Check "Shutdown source when not visible"
+                </p>
+                <a href="#" id="previewLink" target="_blank" class="btn btn-secondary" style="display: none;">Preview in New Tab</a>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
