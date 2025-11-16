@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A78BFA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="url(#grad)"/>
+
+  <!-- Sparkle/Echo effect -->
+  <path d="M 50 20 L 52 30 L 62 32 L 52 34 L 50 44 L 48 34 L 38 32 L 48 30 Z" fill="white" opacity="0.9"/>
+  <path d="M 70 40 L 71 45 L 76 46 L 71 47 L 70 52 L 69 47 L 64 46 L 69 45 Z" fill="white" opacity="0.7"/>
+
+  <!-- Avatar silhouette -->
+  <circle cx="50" cy="60" r="12" fill="white" opacity="0.9"/>
+  <path d="M 35 72 Q 50 65 65 72 Q 65 82 50 85 Q 35 82 35 72 Z" fill="white" opacity="0.9"/>
+
+  <!-- Mic wave (smaller sparkle representing sound) -->
+  <path d="M 30 55 L 31 58 L 34 59 L 31 60 L 30 63 L 29 60 L 26 59 L 29 58 Z" fill="white" opacity="0.6"/>
+</svg>
