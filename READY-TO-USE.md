@@ -35,17 +35,17 @@ Your VTuber avatar platform is **100% complete** with full Discord integration!
    ```
    DISCORD_CLIENT_ID=...
    DISCORD_CLIENT_SECRET=...
-   DISCORD_REDIRECT_URI=https://ai-monster-demo.onrender.com/auth/discord/callback
+   DISCORD_REDIRECT_URI=https://echosprite.onrender.com/auth/discord/callback
    DISCORD_BOT_TOKEN=...
    SESSION_SECRET=random-string
-   FRONTEND_URL=https://rattusking.github.io/ai-monster-demo
+   FRONTEND_URL=https://rattusking.github.io/echosprite
    WS_PORT=3001
    ```
 3. Redeploy on Render
 
 ### **Step 2: Enable GitHub Pages** (If not already done)
 
-1. Go to: https://github.com/RattusKing/ai-monster-demo/settings/pages
+1. Go to: https://github.com/RattusKing/echosprite/settings/pages
 2. **Branch**: `claude/echosprite-vtuber-mvp-01VymQDfvihSk6YELHNaYYnA`
 3. **Folder**: `/frontend`
 4. Click **Save**
@@ -69,7 +69,7 @@ Quick summary:
 
 ### **Option 1: Full Discord Integration**
 
-1. Visit: `https://rattusking.github.io/ai-monster-demo/`
+1. Visit: `https://rattusking.github.io/echosprite/`
 2. Click **"Login with Discord"**
 3. Authorize the app
 4. Upload 4 avatar images (idle, talking, muted, deafened)
@@ -81,7 +81,7 @@ Quick summary:
 
 ### **Option 2: Guest Mode (Mic Only)**
 
-1. Visit: `https://rattusking.github.io/ai-monster-demo/`
+1. Visit: `https://rattusking.github.io/echosprite/`
 2. Click **"Try Guest Mode"**
 3. Upload 2 avatar images (idle, talking)
 4. Test with microphone
@@ -110,32 +110,32 @@ Quick summary:
 
 **Landing Page:**
 ```
-https://rattusking.github.io/ai-monster-demo/
+https://rattusking.github.io/echosprite/
 ```
 
 **Login Page:**
 ```
-https://rattusking.github.io/ai-monster-demo/login.html
+https://rattusking.github.io/echosprite/login.html
 ```
 
 **Dashboard (Discord):**
 ```
-https://rattusking.github.io/ai-monster-demo/app-discord.html
+https://rattusking.github.io/echosprite/app-discord.html
 ```
 
 **Group Viewer:**
 ```
-https://rattusking.github.io/ai-monster-demo/viewer-group.html?channelId=YOUR_CHANNEL_ID
+https://rattusking.github.io/echosprite/viewer-group.html?channelId=YOUR_CHANNEL_ID
 ```
 
 **Individual Viewer:**
 ```
-https://rattusking.github.io/ai-monster-demo/viewer.html?userId=YOUR_DISCORD_ID&mode=discord
+https://rattusking.github.io/echosprite/viewer.html?userId=YOUR_DISCORD_ID&mode=discord
 ```
 
 **Backend API:**
 ```
-https://ai-monster-demo.onrender.com
+https://echosprite.onrender.com
 ```
 
 ---
@@ -143,7 +143,7 @@ https://ai-monster-demo.onrender.com
 ## ✅ Testing Checklist
 
 ### Backend Tests
-- [ ] Visit: `https://ai-monster-demo.onrender.com/health`
+- [ ] Visit: `https://echosprite.onrender.com/health`
   - Should show: `{"status":"healthy","discord":{"bot":true,"oauth":true}}`
 
 ### Frontend Tests
@@ -236,7 +236,7 @@ https://ai-monster-demo.onrender.com
 
 ### Discord Login Not Working
 - Check `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` in Render
-- Verify redirect URI matches exactly: `https://ai-monster-demo.onrender.com/auth/discord/callback`
+- Verify redirect URI matches exactly: `https://echosprite.onrender.com/auth/discord/callback`
 - Check Discord app has correct redirect URL configured
 
 ### Bot Not Detecting Voice
@@ -272,7 +272,7 @@ https://ai-monster-demo.onrender.com
 ✅ OBS browser source ready
 ✅ No downloads needed
 
-Try it: https://rattusking.github.io/ai-monster-demo/
+Try it: https://rattusking.github.io/echosprite/
 
 #VTuber #Streaming #PNGTuber #Discord
 ```

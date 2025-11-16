@@ -34,7 +34,7 @@ Visit: https://discord.com/developers/applications
 1. Still in OAuth2 settings
 2. Scroll to **"Redirects"**
 3. Click **"Add Redirect"**
-4. Add: `https://ai-monster-demo.onrender.com/auth/discord/callback`
+4. Add: `https://echosprite.onrender.com/auth/discord/callback`
 5. Click **"Save Changes"**
 
 ---
@@ -87,10 +87,10 @@ Click **"Save Changes"**
 ```
 DISCORD_CLIENT_ID=paste_your_client_id_here
 DISCORD_CLIENT_SECRET=paste_your_client_secret_here
-DISCORD_REDIRECT_URI=https://ai-monster-demo.onrender.com/auth/discord/callback
+DISCORD_REDIRECT_URI=https://echosprite.onrender.com/auth/discord/callback
 DISCORD_BOT_TOKEN=paste_your_bot_token_here
 SESSION_SECRET=generate_a_random_string_here
-FRONTEND_URL=https://rattusking.github.io/ai-monster-demo
+FRONTEND_URL=https://rattusking.github.io/echosprite
 ```
 
 4. Click **"Save Changes"**
@@ -102,7 +102,7 @@ FRONTEND_URL=https://rattusking.github.io/ai-monster-demo
 
 ### Test 1: Check Health Endpoint
 
-Visit: `https://ai-monster-demo.onrender.com/health`
+Visit: `https://echosprite.onrender.com/health`
 
 You should see:
 ```json
@@ -117,7 +117,7 @@ You should see:
 
 ### Test 2: Test Discord Login
 
-1. Visit your frontend: `https://rattusking.github.io/ai-monster-demo/`
+1. Visit your frontend: `https://rattusking.github.io/echosprite/`
 2. Click "Login with Discord"
 3. You should be redirected to Discord
 4. Authorize the app
