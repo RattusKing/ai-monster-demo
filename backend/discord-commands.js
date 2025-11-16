@@ -159,6 +159,121 @@ const commands = [
         ),
 
     // ========================================
+    // /profile - Manage avatar profiles (themes)
+    // ========================================
+    new SlashCommandBuilder()
+        .setName('profile')
+        .setDescription('Manage multiple avatar profiles (themes)')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('create')
+                .setDescription('Create a new avatar profile')
+                .addStringOption(option =>
+                    option
+                        .setName('name')
+                        .setDescription('Profile name (e.g., "Gaming Mode", "Casual")')
+                        .setRequired(true)
+                        .setMaxLength(100)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('upload')
+                .setDescription('Upload images to a specific profile')
+                .addStringOption(option =>
+                    option
+                        .setName('profile')
+                        .setDescription('Profile name to upload to')
+                        .setRequired(true)
+                        .setAutocomplete(true)
+                )
+                .addAttachmentOption(option =>
+                    option
+                        .setName('idle')
+                        .setDescription('Idle state image (required)')
+                        .setRequired(true)
+                )
+                .addAttachmentOption(option =>
+                    option
+                        .setName('talking')
+                        .setDescription('Talking state image (required)')
+                        .setRequired(true)
+                )
+                .addAttachmentOption(option =>
+                    option
+                        .setName('muted')
+                        .setDescription('Muted state image (optional)')
+                        .setRequired(false)
+                )
+                .addAttachmentOption(option =>
+                    option
+                        .setName('deafened')
+                        .setDescription('Deafened state image (optional)')
+                        .setRequired(false)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('list')
+                .setDescription('List all your avatar profiles')
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('switch')
+                .setDescription('Switch to a different profile (becomes active)')
+                .addStringOption(option =>
+                    option
+                        .setName('profile')
+                        .setDescription('Profile name to switch to')
+                        .setRequired(true)
+                        .setAutocomplete(true)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('url')
+                .setDescription('Get OBS URL for a specific profile')
+                .addStringOption(option =>
+                    option
+                        .setName('profile')
+                        .setDescription('Profile name (leave empty for active profile)')
+                        .setRequired(false)
+                        .setAutocomplete(true)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('delete')
+                .setDescription('Delete a profile permanently')
+                .addStringOption(option =>
+                    option
+                        .setName('profile')
+                        .setDescription('Profile name to delete')
+                        .setRequired(true)
+                        .setAutocomplete(true)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('rename')
+                .setDescription('Rename a profile')
+                .addStringOption(option =>
+                    option
+                        .setName('old')
+                        .setDescription('Current profile name')
+                        .setRequired(true)
+                        .setAutocomplete(true)
+                )
+                .addStringOption(option =>
+                    option
+                        .setName('new')
+                        .setDescription('New profile name')
+                        .setRequired(true)
+                        .setMaxLength(100)
+                )
+        ),
+
+    // ========================================
     // /help - Get help with EchoSprite
     // ========================================
     new SlashCommandBuilder()

@@ -6,6 +6,15 @@ const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const axios = require('axios');
 const db = require('./db');
 const logger = require('./logger');
+const {
+    handleProfileCreate,
+    handleProfileUpload,
+    handleProfileList,
+    handleProfileSwitch,
+    handleProfileUrl,
+    handleProfileDelete,
+    handleProfileRename
+} = require('./discord-profile-handlers');
 
 // ========================================
 // Helper Functions
@@ -618,6 +627,32 @@ async function handleSlashCommand(interaction) {
                     break;
                 case 'dim-inactive':
                     await handleSettingsUpdate(interaction, 'dimInactive', interaction.options.getBoolean('enabled'));
+                    break;
+            }
+        } else if (commandName === 'profile') {
+            const subcommand = interaction.options.getSubcommand();
+
+            switch (subcommand) {
+                case 'create':
+                    await handleProfileCreate(interaction);
+                    break;
+                case 'upload':
+                    await handleProfileUpload(interaction);
+                    break;
+                case 'list':
+                    await handleProfileList(interaction);
+                    break;
+                case 'switch':
+                    await handleProfileSwitch(interaction);
+                    break;
+                case 'url':
+                    await handleProfileUrl(interaction);
+                    break;
+                case 'delete':
+                    await handleProfileDelete(interaction);
+                    break;
+                case 'rename':
+                    await handleProfileRename(interaction);
                     break;
             }
         } else if (commandName === 'help') {

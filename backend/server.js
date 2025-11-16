@@ -411,8 +411,22 @@ app.put('/api/avatar',
 app.get('/api/avatar/:discordId', async (req, res) => {
     try {
         const { discordId } = req.params;
+        const { profile } = req.query; // Optional profile slug parameter
 
-        const avatar = await db.avatars.findByDiscordId(discordId);
+        let avatar;
+
+        if (profile) {
+            // Get specific profile by slug
+            avatar = await db.profiles.findByDiscordIdAndSlug(discordId, profile);
+        } else {
+            // Get active profile
+            avatar = await db.profiles.getActiveByDiscordId(discordId);
+
+            // Fall back to old avatars table for backward compatibility
+            if (!avatar) {
+                avatar = await db.avatars.findByDiscordId(discordId);
+            }
+        }
 
         if (!avatar) {
             return res.status(404).json({ error: 'Avatar not found' });
@@ -425,12 +439,48 @@ app.get('/api/avatar/:discordId', async (req, res) => {
                 talking: avatar.talking_image,
                 muted: avatar.muted_image,
                 deafened: avatar.deafened_image,
-                settings: avatar.settings
+                settings: avatar.settings || {}
+            },
+            profile: {
+                name: avatar.profile_name || 'Default',
+                slug: avatar.profile_slug || 'default',
+                isActive: avatar.is_active || false
             }
         });
     } catch (error) {
         logger.error(`Get avatar error: ${error.message}`);
         res.status(500).json({ error: 'Failed to get avatar' });
+    }
+});
+
+// Get all profiles for a user
+app.get('/api/profiles/:discordId', async (req, res) => {
+    try {
+        const { discordId } = req.params;
+
+        const user = await db.users.findByDiscordId(discordId);
+        if (!user) {
+            return res.json({ success: true, profiles: [] });
+        }
+
+        const profiles = await db.profiles.findByUserId(user.id);
+
+        res.json({
+            success: true,
+            profiles: profiles.map(p => ({
+                id: p.id,
+                name: p.profile_name,
+                slug: p.profile_slug,
+                isActive: p.is_active,
+                hasImages: !!(p.idle_image && p.talking_image),
+                settings: p.settings || {},
+                createdAt: p.created_at,
+                updatedAt: p.updated_at
+            }))
+        });
+    } catch (error) {
+        logger.error(`Get profiles error: ${error.message}`);
+        res.status(500).json({ error: 'Failed to get profiles' });
     }
 });
 

@@ -14,18 +14,29 @@ const pool = new Pool({
     } : false
 });
 
+const migrations = [
+    '001_initial_schema.sql',
+    '002_avatar_profiles.sql'
+];
+
 async function runMigrations() {
     console.log('🚀 Starting database migrations...\n');
 
     try {
-        // Read migration file
-        const migrationFile = path.join(__dirname, '001_initial_schema.sql');
-        const sql = fs.readFileSync(migrationFile, 'utf8');
+        for (const migrationFile of migrations) {
+            const migrationPath = path.join(__dirname, migrationFile);
 
-        // Execute migration
-        console.log('📝 Running migration: 001_initial_schema.sql');
-        await pool.query(sql);
-        console.log('✅ Migration completed successfully\n');
+            if (!fs.existsSync(migrationPath)) {
+                console.log(`⏭️  Skipping ${migrationFile} (not found)`);
+                continue;
+            }
+
+            const sql = fs.readFileSync(migrationPath, 'utf8');
+
+            console.log(`📝 Running migration: ${migrationFile}`);
+            await pool.query(sql);
+            console.log(`✅ ${migrationFile} completed successfully\n`);
+        }
 
         // Verify tables
         const result = await pool.query(`

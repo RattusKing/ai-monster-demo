@@ -146,6 +146,146 @@ const db = {
             const result = await pool.query(query, [startDate, endDate]);
             return result.rows;
         }
+    },
+
+    // Avatar Profile operations
+    profiles: {
+        // Create a new profile
+        async create(userId, profileName, profileSlug, isActive = false) {
+            const query = `
+                INSERT INTO avatar_profiles (user_id, profile_name, profile_slug, is_active, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, NOW(), NOW())
+                RETURNING *
+            `;
+            const result = await pool.query(query, [userId, profileName, profileSlug, isActive]);
+            return result.rows[0];
+        },
+
+        // Update profile images and settings
+        async update(profileId, avatarData) {
+            const query = `
+                UPDATE avatar_profiles
+                SET
+                    idle_image = $2,
+                    talking_image = $3,
+                    muted_image = $4,
+                    deafened_image = $5,
+                    settings = $6,
+                    updated_at = NOW()
+                WHERE id = $1
+                RETURNING *
+            `;
+            const result = await pool.query(query, [
+                profileId,
+                avatarData.idle || null,
+                avatarData.talking || null,
+                avatarData.muted || null,
+                avatarData.deafened || null,
+                JSON.stringify(avatarData.settings || {})
+            ]);
+            return result.rows[0];
+        },
+
+        // Get all profiles for a user
+        async findByUserId(userId) {
+            const query = `
+                SELECT * FROM avatar_profiles
+                WHERE user_id = $1
+                ORDER BY is_active DESC, created_at ASC
+            `;
+            const result = await pool.query(query, [userId]);
+            return result.rows;
+        },
+
+        // Get a specific profile by user and slug
+        async findByUserAndSlug(userId, profileSlug) {
+            const query = `
+                SELECT * FROM avatar_profiles
+                WHERE user_id = $1 AND profile_slug = $2
+            `;
+            const result = await pool.query(query, [userId, profileSlug]);
+            return result.rows[0];
+        },
+
+        // Get a specific profile by Discord ID and slug
+        async findByDiscordIdAndSlug(discordId, profileSlug) {
+            const query = `
+                SELECT p.* FROM avatar_profiles p
+                JOIN users u ON p.user_id = u.id
+                WHERE u.discord_id = $1 AND p.profile_slug = $2
+            `;
+            const result = await pool.query(query, [discordId, profileSlug]);
+            return result.rows[0];
+        },
+
+        // Get active profile for a user
+        async getActive(userId) {
+            const query = `
+                SELECT * FROM avatar_profiles
+                WHERE user_id = $1 AND is_active = TRUE
+                LIMIT 1
+            `;
+            const result = await pool.query(query, [userId]);
+            return result.rows[0];
+        },
+
+        // Get active profile by Discord ID
+        async getActiveByDiscordId(discordId) {
+            const query = `
+                SELECT p.* FROM avatar_profiles p
+                JOIN users u ON p.user_id = u.id
+                WHERE u.discord_id = $1 AND p.is_active = TRUE
+                LIMIT 1
+            `;
+            const result = await pool.query(query, [discordId]);
+            return result.rows[0];
+        },
+
+        // Set a profile as active (automatically deactivates others via trigger)
+        async setActive(profileId, userId) {
+            const query = `
+                UPDATE avatar_profiles
+                SET is_active = TRUE, updated_at = NOW()
+                WHERE id = $1 AND user_id = $2
+                RETURNING *
+            `;
+            const result = await pool.query(query, [profileId, userId]);
+            return result.rows[0];
+        },
+
+        // Delete a profile
+        async delete(profileId, userId) {
+            const query = `
+                DELETE FROM avatar_profiles
+                WHERE id = $1 AND user_id = $2
+                RETURNING *
+            `;
+            const result = await pool.query(query, [profileId, userId]);
+            return result.rows[0];
+        },
+
+        // Rename a profile
+        async rename(profileId, userId, newName, newSlug) {
+            const query = `
+                UPDATE avatar_profiles
+                SET profile_name = $3, profile_slug = $4, updated_at = NOW()
+                WHERE id = $1 AND user_id = $2
+                RETURNING *
+            `;
+            const result = await pool.query(query, [profileId, userId, newName, newSlug]);
+            return result.rows[0];
+        },
+
+        // Get profile count for a user
+        async count(userId) {
+            const query = `
+                SELECT COUNT(*) as count
+                FROM avatar_profiles
+                WHERE user_id = $1
+            `;
+            const result = await pool.query(query, [userId]);
+            return parseInt(result.rows[0].count);
+        }
     }
 };
 
