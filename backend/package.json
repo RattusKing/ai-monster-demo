@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "migrate": "node migrations/run.js"
+    "migrate": "node migrations/run.js",
+    "register-commands": "node register-commands.js"
   },
   "keywords": ["vtuber", "avatar", "streaming", "obs"],
   "author": "",

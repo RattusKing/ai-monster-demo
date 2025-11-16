@@ -28,6 +28,7 @@ const {
     errorHandler,
     requestLogger
 } = require('./middleware');
+const { handleSlashCommand } = require('./discord-handlers');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -98,10 +99,19 @@ if (process.env.DISCORD_BOT_TOKEN) {
 
     discordClient.on('ready', () => {
         logger.info(`Discord Bot logged in as ${discordClient.user.tag}`);
+        logger.info(`Slash commands: Use 'npm run register-commands' to register commands`);
     });
 
     discordClient.on('voiceStateUpdate', (oldState, newState) => {
         handleVoiceStateUpdate(oldState, newState);
+    });
+
+    // Slash command handler
+    discordClient.on('interactionCreate', async (interaction) => {
+        if (!interaction.isChatInputCommand()) return;
+
+        logger.info(`Slash command received: /${interaction.commandName} from ${interaction.user.tag}`);
+        await handleSlashCommand(interaction);
     });
 
     discordClient.on('error', (error) => {
