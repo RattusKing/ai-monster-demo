@@ -1,5 +1,6 @@
 // ========================================
-// EchoSprite Backend API - Full Discord Integration
+// EchoSprite Backend API - Production Version
+// Full Discord Integration + PostgreSQL + Security
 // ========================================
 
 const express = require('express');
@@ -10,58 +11,83 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const WebSocket = require('ws');
 const { Client, GatewayIntentBits } = require('discord.js');
+const pgSession = require('connect-pg-simple')(session);
 require('dotenv').config();
+
+// Import custom modules
+const db = require('./db');
+const logger = require('./logger');
+const {
+    apiLimiter,
+    authLimiter,
+    uploadLimiter,
+    securityHeaders,
+    validators,
+    handleValidationErrors,
+    requireAuth,
+    errorHandler,
+    requestLogger
+} = require('./middleware');
+const { handleSlashCommand } = require('./discord-handlers');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const WS_PORT = process.env.WS_PORT || 3001;
 
 // ========================================
-// In-Memory Database (Replace with PostgreSQL in production)
+// Security & Middleware
 // ========================================
 
-const users = new Map(); // discordId -> user data
-const avatars = new Map(); // discordId -> avatar config (4 states)
-const voiceChannels = new Map(); // channelId -> Set of userIds
-const sessions = new Map(); // sessionId -> userId
+// Security headers first
+app.use(securityHeaders);
 
-// ========================================
-// Middleware
-// ========================================
-
+// CORS
 app.use(cors({
     origin: process.env.CORS_ORIGINS?.split(',') || '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
 }));
 
+// Body parsing
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(cookieParser());
 
+// Session with PostgreSQL store
 app.use(session({
+    store: new pgSession({
+        conString: process.env.DATABASE_URL,
+        tableName: 'session'
+    }),
     secret: process.env.SESSION_SECRET || 'echosprite-secret-change-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production'
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
     }
 }));
 
 // Request logging
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-    next();
-});
+app.use(requestLogger);
+
+// Apply general rate limiting to all routes
+app.use(apiLimiter);
+
+// ========================================
+// In-Memory Cache (for voice states only)
+// ========================================
+
+const voiceChannels = new Map(); // channelId -> Set of userIds
+const voiceStates = new Map(); // userId -> { channelId, state, username, avatar }
 
 // ========================================
 // Discord Bot Setup
 // ========================================
 
 let discordClient = null;
-const voiceStates = new Map(); // userId -> { channelId, speaking, muted, deafened }
 
 if (process.env.DISCORD_BOT_TOKEN) {
     discordClient = new Client({
@@ -72,15 +98,28 @@ if (process.env.DISCORD_BOT_TOKEN) {
     });
 
     discordClient.on('ready', () => {
-        console.log(`✅ Discord Bot logged in as ${discordClient.user.tag}`);
+        logger.info(`Discord Bot logged in as ${discordClient.user.tag}`);
+        logger.info(`Slash commands: Use 'npm run register-commands' to register commands`);
     });
 
     discordClient.on('voiceStateUpdate', (oldState, newState) => {
         handleVoiceStateUpdate(oldState, newState);
     });
 
+    // Slash command handler
+    discordClient.on('interactionCreate', async (interaction) => {
+        if (!interaction.isChatInputCommand()) return;
+
+        logger.info(`Slash command received: /${interaction.commandName} from ${interaction.user.tag}`);
+        await handleSlashCommand(interaction);
+    });
+
+    discordClient.on('error', (error) => {
+        logger.error(`Discord Bot error: ${error.message}`);
+    });
+
     discordClient.login(process.env.DISCORD_BOT_TOKEN).catch(err => {
-        console.error('❌ Discord Bot login failed:', err.message);
+        logger.error(`Discord Bot login failed: ${err.message}`);
     });
 }
 
@@ -97,6 +136,11 @@ function handleVoiceStateUpdate(oldState, newState) {
             voiceChannels.get(oldChannelId).delete(userId);
         }
         broadcastVoiceUpdate(oldChannelId, userId, null);
+
+        // Log analytics
+        db.analytics.logEvent('voice_leave', null, { userId, channelId: oldChannelId })
+            .catch(err => logger.error(`Analytics error: ${err.message}`));
+
         return;
     }
 
@@ -133,6 +177,10 @@ function handleVoiceStateUpdate(oldState, newState) {
         }
 
         broadcastVoiceUpdate(channelId, userId, state);
+
+        // Log analytics
+        db.analytics.logEvent('voice_update', null, { userId, channelId, state })
+            .catch(err => logger.error(`Analytics error: ${err.message}`));
     }
 }
 
@@ -148,7 +196,7 @@ wss.on('connection', (ws, req) => {
     const channelId = url.searchParams.get('channelId');
     const type = url.searchParams.get('type') || 'group';
 
-    console.log(`🔌 WebSocket connected: channelId=${channelId}, type=${type}`);
+    logger.info(`WebSocket connected: channelId=${channelId}, type=${type}`);
 
     if (channelId) {
         if (!channelSubscriptions.has(channelId)) {
@@ -178,7 +226,7 @@ wss.on('connection', (ws, req) => {
     });
 
     ws.on('error', (error) => {
-        console.error('WebSocket error:', error);
+        logger.error(`WebSocket error: ${error.message}`);
     });
 });
 
@@ -199,7 +247,7 @@ function broadcastVoiceUpdate(channelId, userId, state) {
     });
 }
 
-console.log(`🔌 WebSocket server running on port ${WS_PORT}`);
+logger.info(`WebSocket server running on port ${WS_PORT}`);
 
 // ========================================
 // Discord OAuth Routes
@@ -209,15 +257,16 @@ const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/discord/callback';
 
-app.get('/auth/discord', (req, res) => {
+app.get('/auth/discord', authLimiter, (req, res) => {
     const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=identify%20guilds%20guilds.members.read`;
     res.redirect(authUrl);
 });
 
-app.get('/auth/discord/callback', async (req, res) => {
+app.get('/auth/discord/callback', authLimiter, async (req, res) => {
     const { code } = req.query;
 
     if (!code) {
+        logger.warn('Discord callback: No code provided');
         return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/app.html?error=no_code`);
     }
 
@@ -249,219 +298,309 @@ app.get('/auth/discord/callback', async (req, res) => {
 
         const discordUser = userResponse.data;
 
-        // Store user
-        users.set(discordUser.id, {
-            discordId: discordUser.id,
-            username: discordUser.username,
-            discriminator: discordUser.discriminator,
-            avatar: discordUser.avatar,
-            accessToken: access_token,
-            refreshToken: refresh_token,
-            lastLogin: new Date().toISOString()
-        });
+        // Store user in database
+        const user = await db.users.create(
+            discordUser.id,
+            discordUser.username,
+            discordUser.discriminator,
+            discordUser.avatar
+        );
 
         // Create session
-        const sessionId = generateSecureId();
-        sessions.set(sessionId, discordUser.id);
-        req.session.userId = discordUser.id;
-        req.session.sessionId = sessionId;
+        req.session.userId = user.id;
+        req.session.discordId = discordUser.id;
+
+        // Log analytics
+        await db.analytics.logEvent('user_login', user.id, { method: 'discord' });
+
+        logger.info(`User logged in: ${discordUser.username} (${discordUser.id})`);
 
         // Redirect to dashboard
-        res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/app.html?login=success`);
+        res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/app-discord.html?login=success`);
 
     } catch (error) {
-        console.error('Discord OAuth error:', error.response?.data || error.message);
+        logger.error(`Discord OAuth error: ${error.response?.data || error.message}`);
         res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/app.html?error=auth_failed`);
     }
 });
 
-app.get('/auth/logout', (req, res) => {
-    const sessionId = req.session.sessionId;
-    if (sessionId) {
-        sessions.delete(sessionId);
+app.get('/auth/logout', requireAuth, (req, res) => {
+    const userId = req.session.userId;
+
+    // Log analytics
+    if (userId) {
+        db.analytics.logEvent('user_logout', userId)
+            .catch(err => logger.error(`Analytics error: ${err.message}`));
     }
-    req.session.destroy();
-    res.json({ success: true });
+
+    req.session.destroy((err) => {
+        if (err) {
+            logger.error(`Session destroy error: ${err.message}`);
+            return res.status(500).json({ error: 'Logout failed' });
+        }
+        res.json({ success: true });
+    });
 });
 
-app.get('/auth/me', (req, res) => {
-    const userId = req.session.userId;
-    if (!userId) {
-        return res.status(401).json({ error: 'Not authenticated' });
-    }
+app.get('/auth/me', requireAuth, async (req, res) => {
+    try {
+        const user = await db.users.findByDiscordId(req.session.discordId);
 
-    const user = users.get(userId);
-    if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-    }
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
 
-    res.json({
-        discordId: user.discordId,
-        username: user.username,
-        discriminator: user.discriminator,
-        avatar: user.avatar
-    });
+        res.json({
+            discordId: user.discord_id,
+            username: user.username,
+            discriminator: user.discriminator,
+            avatar: user.avatar
+        });
+    } catch (error) {
+        logger.error(`Get user error: ${error.message}`);
+        res.status(500).json({ error: 'Failed to get user data' });
+    }
 });
 
 // ========================================
 // Avatar Management Routes (4 States)
 // ========================================
 
-app.put('/api/avatar', (req, res) => {
-    const userId = req.session.userId;
-    if (!userId) {
-        return res.status(401).json({ error: 'Not authenticated' });
+app.put('/api/avatar',
+    requireAuth,
+    uploadLimiter,
+    validators.avatarUpload,
+    handleValidationErrors,
+    async (req, res) => {
+        try {
+            const userId = req.session.userId;
+            const { idle, talking, muted, deafened, settings } = req.body;
+
+            // Validate at least one state
+            if (!idle && !talking && !muted && !deafened) {
+                return res.status(400).json({ error: 'At least one avatar state is required' });
+            }
+
+            // Store avatar config in database
+            await db.avatars.upsert(userId, {
+                idle: idle || null,
+                talking: talking || null,
+                muted: muted || null,
+                deafened: deafened || null,
+                settings: settings || {}
+            });
+
+            // Log analytics
+            await db.analytics.logEvent('avatar_upload', userId, {
+                states: { idle: !!idle, talking: !!talking, muted: !!muted, deafened: !!deafened }
+            });
+
+            logger.info(`Avatar updated for user ${userId}`);
+
+            res.json({
+                success: true,
+                message: 'Avatar updated successfully'
+            });
+        } catch (error) {
+            logger.error(`Avatar upload error: ${error.message}`);
+            res.status(500).json({ error: 'Failed to upload avatar' });
+        }
     }
+);
 
-    const { idle, talking, muted, deafened, settings } = req.body;
+app.get('/api/avatar/:discordId', async (req, res) => {
+    try {
+        const { discordId } = req.params;
+        const { profile } = req.query; // Optional profile slug parameter
 
-    // Validate at least one state
-    if (!idle && !talking && !muted && !deafened) {
-        return res.status(400).json({ error: 'At least one avatar state is required' });
+        let avatar;
+
+        if (profile) {
+            // Get specific profile by slug
+            avatar = await db.profiles.findByDiscordIdAndSlug(discordId, profile);
+        } else {
+            // Get active profile
+            avatar = await db.profiles.getActiveByDiscordId(discordId);
+
+            // Fall back to old avatars table for backward compatibility
+            if (!avatar) {
+                avatar = await db.avatars.findByDiscordId(discordId);
+            }
+        }
+
+        if (!avatar) {
+            return res.status(404).json({ error: 'Avatar not found' });
+        }
+
+        res.json({
+            success: true,
+            avatar: {
+                idle: avatar.idle_image,
+                talking: avatar.talking_image,
+                muted: avatar.muted_image,
+                deafened: avatar.deafened_image,
+                settings: avatar.settings || {}
+            },
+            profile: {
+                name: avatar.profile_name || 'Default',
+                slug: avatar.profile_slug || 'default',
+                isActive: avatar.is_active || false
+            }
+        });
+    } catch (error) {
+        logger.error(`Get avatar error: ${error.message}`);
+        res.status(500).json({ error: 'Failed to get avatar' });
     }
-
-    // Store avatar config
-    avatars.set(userId, {
-        idle: idle || null,
-        talking: talking || null,
-        muted: muted || null,
-        deafened: deafened || null,
-        settings: settings || {},
-        updatedAt: new Date().toISOString()
-    });
-
-    console.log(`✅ Updated avatar for user ${userId}`);
-
-    res.json({
-        success: true,
-        message: 'Avatar updated successfully'
-    });
 });
 
-app.get('/api/avatar/:discordId', (req, res) => {
-    const { discordId } = req.params;
+// Get all profiles for a user
+app.get('/api/profiles/:discordId', async (req, res) => {
+    try {
+        const { discordId } = req.params;
 
-    const avatar = avatars.get(discordId);
-    if (!avatar) {
-        return res.status(404).json({ error: 'Avatar not found' });
-    }
-
-    res.json({
-        success: true,
-        avatar: {
-            idle: avatar.idle,
-            talking: avatar.talking,
-            muted: avatar.muted,
-            deafened: avatar.deafened,
-            settings: avatar.settings
+        const user = await db.users.findByDiscordId(discordId);
+        if (!user) {
+            return res.json({ success: true, profiles: [] });
         }
-    });
+
+        const profiles = await db.profiles.findByUserId(user.id);
+
+        res.json({
+            success: true,
+            profiles: profiles.map(p => ({
+                id: p.id,
+                name: p.profile_name,
+                slug: p.profile_slug,
+                isActive: p.is_active,
+                hasImages: !!(p.idle_image && p.talking_image),
+                settings: p.settings || {},
+                createdAt: p.created_at,
+                updatedAt: p.updated_at
+            }))
+        });
+    } catch (error) {
+        logger.error(`Get profiles error: ${error.message}`);
+        res.status(500).json({ error: 'Failed to get profiles' });
+    }
 });
 
 // ========================================
 // Channel & Group Routes
 // ========================================
 
-app.get('/api/channel/:channelId/members', (req, res) => {
-    const { channelId } = req.params;
+app.get('/api/channel/:channelId/members', async (req, res) => {
+    try {
+        const { channelId } = req.params;
 
-    if (!voiceChannels.has(channelId)) {
-        return res.json({ members: [] });
-    }
-
-    const memberIds = Array.from(voiceChannels.get(channelId));
-    const members = memberIds.map(userId => {
-        const voiceState = voiceStates.get(userId);
-        const user = users.get(userId);
-
-        return {
-            userId,
-            username: voiceState?.username || user?.username || 'Unknown',
-            state: voiceState?.state || 'idle',
-            avatar: voiceState?.avatar || user?.avatar
-        };
-    });
-
-    res.json({ members });
-});
-
-// ========================================
-// Backward Compatibility (Old Cloud Save)
-// ========================================
-
-const legacyConfigs = new Map();
-
-app.post('/api/avatar-config', (req, res) => {
-    const { idleImage, talkingImage, mutedImage, deafenedImage, sensitivity, settings } = req.body;
-
-    const publicId = generateSecureId();
-
-    legacyConfigs.set(publicId, {
-        publicId,
-        idle: idleImage,
-        talking: talkingImage,
-        muted: mutedImage,
-        deafened: deafenedImage,
-        sensitivity: sensitivity || 30,
-        settings: settings || {},
-        createdAt: new Date().toISOString()
-    });
-
-    res.json({
-        success: true,
-        publicId,
-        viewerUrl: `/viewer.html?id=${publicId}`
-    });
-});
-
-app.get('/api/avatar-config/:publicId', (req, res) => {
-    const { publicId } = req.params;
-    const config = legacyConfigs.get(publicId);
-
-    if (!config) {
-        return res.status(404).json({ error: 'Configuration not found' });
-    }
-
-    res.json({
-        success: true,
-        config: {
-            idleImage: config.idle,
-            talkingImage: config.talking,
-            mutedImage: config.muted,
-            deafenedImage: config.deafened,
-            sensitivity: config.sensitivity,
-            settings: config.settings
+        if (!voiceChannels.has(channelId)) {
+            return res.json({ members: [] });
         }
-    });
+
+        const memberIds = Array.from(voiceChannels.get(channelId));
+        const members = [];
+
+        for (const userId of memberIds) {
+            const voiceState = voiceStates.get(userId);
+            const user = await db.users.findByDiscordId(userId);
+
+            members.push({
+                userId,
+                username: voiceState?.username || user?.username || 'Unknown',
+                state: voiceState?.state || 'idle',
+                avatar: voiceState?.avatar || user?.avatar
+            });
+        }
+
+        res.json({ members });
+    } catch (error) {
+        logger.error(`Get channel members error: ${error.message}`);
+        res.status(500).json({ error: 'Failed to get channel members' });
+    }
+});
+
+// ========================================
+// Analytics Routes (Admin Only - Add auth later)
+// ========================================
+
+app.get('/api/analytics/stats', async (req, res) => {
+    try {
+        const { start, end } = req.query;
+        const startDate = start ? new Date(start) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const endDate = end ? new Date(end) : new Date();
+
+        const stats = await db.analytics.getStats(startDate, endDate);
+
+        res.json({ success: true, stats });
+    } catch (error) {
+        logger.error(`Get analytics error: ${error.message}`);
+        res.status(500).json({ error: 'Failed to get analytics' });
+    }
 });
 
 // ========================================
 // Health Check
 // ========================================
 
-app.get('/health', (req, res) => {
-    res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        version: '2.0.0',
-        discord: {
-            bot: discordClient?.isReady() || false,
-            oauth: !!(DISCORD_CLIENT_ID && DISCORD_CLIENT_SECRET)
-        },
-        websocket: {
-            port: WS_PORT,
-            connections: wss.clients.size
-        }
-    });
+app.get('/health', async (req, res) => {
+    try {
+        // Test database connection
+        await db.query('SELECT 1');
+
+        res.json({
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            version: '2.0.0-production',
+            database: 'connected',
+            discord: {
+                bot: discordClient?.isReady() || false,
+                oauth: !!(DISCORD_CLIENT_ID && DISCORD_CLIENT_SECRET)
+            },
+            websocket: {
+                port: WS_PORT,
+                connections: wss.clients.size
+            }
+        });
+    } catch (error) {
+        logger.error(`Health check failed: ${error.message}`);
+        res.status(503).json({
+            status: 'unhealthy',
+            error: error.message
+        });
+    }
 });
 
 app.get('/', (req, res) => {
     res.json({
-        name: 'EchoSprite API v2',
+        name: 'EchoSprite API v2 (Production)',
         version: '2.0.0',
-        features: ['Discord OAuth', 'Discord Bot', 'WebSocket', '4 Avatar States', 'Group Viewing']
+        features: [
+            'Discord OAuth',
+            'Discord Bot',
+            'WebSocket',
+            '4 Avatar States',
+            'Group Viewing',
+            'PostgreSQL Database',
+            'Rate Limiting',
+            'Security Headers',
+            'Analytics'
+        ]
     });
 });
+
+// ========================================
+// Error Handling
+// ========================================
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        error: 'Not Found',
+        message: `Route ${req.method} ${req.path} not found`
+    });
+});
+
+// Global error handler (must be last)
+app.use(errorHandler);
 
 // ========================================
 // Helper Functions
@@ -476,17 +615,36 @@ function generateSecureId() {
 // ========================================
 
 app.listen(PORT, () => {
-    console.log(`🚀 EchoSprite API v2 running on port ${PORT}`);
-    console.log(`📍 Health check: http://localhost:${PORT}/health`);
-    console.log(`🎮 Discord Bot: ${discordClient ? 'Enabled' : 'Disabled (set DISCORD_BOT_TOKEN)'}`);
-    console.log(`🔐 Discord OAuth: ${DISCORD_CLIENT_ID ? 'Configured' : 'Not configured'}`);
+    logger.info(`EchoSprite API v2 (Production) running on port ${PORT}`);
+    logger.info(`Health check: http://localhost:${PORT}/health`);
+    logger.info(`Discord Bot: ${discordClient ? 'Enabled' : 'Disabled (set DISCORD_BOT_TOKEN)'}`);
+    logger.info(`Discord OAuth: ${DISCORD_CLIENT_ID ? 'Configured' : 'Not configured'}`);
+    logger.info(`Database: PostgreSQL`);
+    logger.info(`Security: Helmet, Rate Limiting, Input Validation`);
 });
 
+// Graceful shutdown
 process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down...');
-    wss.close();
+    logger.info('SIGTERM received, shutting down gracefully...');
+
+    wss.close(() => {
+        logger.info('WebSocket server closed');
+    });
+
     if (discordClient) {
         discordClient.destroy();
+        logger.info('Discord client destroyed');
     }
+
     process.exit(0);
+});
+
+process.on('uncaughtException', (error) => {
+    logger.error(`Uncaught Exception: ${error.message}`);
+    logger.error(error.stack);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
 });

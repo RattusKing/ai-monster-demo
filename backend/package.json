@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "migrate": "node migrations/run.js",
+    "register-commands": "node register-commands.js"
   },
   "keywords": ["vtuber", "avatar", "streaming", "obs"],
   "author": "",
@@ -18,7 +20,13 @@
     "ws": "^8.16.0",
     "express-session": "^1.17.3",
     "cookie-parser": "^1.4.6",
-    "axios": "^1.6.5"
+    "axios": "^1.6.5",
+    "pg": "^8.11.3",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "express-validator": "^7.0.1",
+    "winston": "^3.11.0",
+    "connect-pg-simple": "^9.0.1"
   },
   "engines": {
     "node": ">=18.0.0"
