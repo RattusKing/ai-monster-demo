@@ -6,7 +6,7 @@ const CONFIG = {
     // API Base URL - automatically detects environment
     API_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://localhost:3000'
-        : 'https://echosprite-api.onrender.com', // Replace with your Render URL
+        : 'https://ai-monster-demo.onrender.com', // Your live Render API
 
     // Feature flags
     FEATURES: {
