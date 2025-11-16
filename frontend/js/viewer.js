@@ -1,5 +1,5 @@
 // ========================================
-// EchoSprite Viewer (OBS Browser Source)
+// EchoSprite Viewer (OBS Browser Source) - Enhanced
 // ========================================
 
 class EchoSpriteViewer {
@@ -13,13 +13,23 @@ class EchoSpriteViewer {
         this.sensitivity = 30;
         this.animationFrame = null;
         this.avatarElement = document.getElementById('avatar');
+        this.api = new EchoSpriteAPI();
+
+        // Blink animation settings
+        this.blinkEnabled = true;
+        this.lastBlinkTime = Date.now();
+        this.blinkInterval = 5000; // Blink every 5 seconds (randomized)
+
+        // Bounce animation settings
+        this.bounceEnabled = false;
 
         this.init();
     }
 
-    init() {
+    async init() {
         // Check URL parameters
         const params = new URLSearchParams(window.location.search);
+        const cloudId = params.get('id');
         const mode = params.get('mode');
         const testMode = params.get('test') === 'true';
 
@@ -29,16 +39,54 @@ class EchoSpriteViewer {
             this.setupTestControls();
         }
 
-        // Load images from localStorage
-        this.loadImages();
+        // Load from cloud if ID is provided, otherwise use localStorage
+        if (cloudId) {
+            await this.loadFromCloud(cloudId);
+        } else {
+            this.loadLocalImages();
+        }
 
         // Auto-start mic if in live mode
-        if (mode === 'live') {
-            this.startMicDetection();
+        if (mode === 'live' || cloudId) {
+            setTimeout(() => this.startMicDetection(), 500);
+        }
+
+        // Start blink animation
+        if (this.blinkEnabled) {
+            this.startBlinkAnimation();
         }
     }
 
-    loadImages() {
+    // ========================================
+    // Load Images
+    // ========================================
+
+    async loadFromCloud(publicId) {
+        try {
+            console.log('Loading avatar from cloud:', publicId);
+            const response = await this.api.getConfig(publicId);
+
+            if (response.success && response.config) {
+                const config = response.config;
+
+                this.idleImage = config.idleImage;
+                this.talkingImage = config.talkingImage;
+                this.sensitivity = config.sensitivity || 30;
+
+                // Display idle image
+                if (this.idleImage) {
+                    this.avatarElement.src = this.idleImage;
+                    console.log('✅ Avatar loaded from cloud');
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load avatar from cloud:', error);
+            // Fallback to localStorage
+            this.loadLocalImages();
+        }
+    }
+
+    loadLocalImages() {
         this.idleImage = localStorage.getItem('echosprite_idle');
         this.talkingImage = localStorage.getItem('echosprite_talking');
         this.sensitivity = parseInt(localStorage.getItem('echosprite_sensitivity') || '30');
@@ -46,15 +94,16 @@ class EchoSpriteViewer {
         // Display idle image by default
         if (this.idleImage) {
             this.avatarElement.src = this.idleImage;
+            console.log('✅ Avatar loaded from localStorage');
         } else {
-            // Fallback placeholder
             this.avatarElement.alt = 'No avatar uploaded';
+            console.log('⚠️ No avatar found');
         }
     }
 
     updateAvatar() {
         const currentImage = this.isTalking ? (this.talkingImage || this.idleImage) : this.idleImage;
-        if (currentImage) {
+        if (currentImage && this.avatarElement.src !== currentImage) {
             this.avatarElement.src = currentImage;
         }
     }
@@ -75,6 +124,7 @@ class EchoSpriteViewer {
             const bufferLength = this.analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
 
+            console.log('🎤 Microphone activated');
             this.monitorMic(dataArray);
         } catch (error) {
             console.error('Microphone access denied:', error);
@@ -94,22 +144,58 @@ class EchoSpriteViewer {
 
             // Check if talking
             const threshold = this.sensitivity;
+            const wasTalking = this.isTalking;
+
             if (volume > threshold) {
-                if (!this.isTalking) {
-                    this.isTalking = true;
-                    this.updateAvatar();
-                }
+                this.isTalking = true;
             } else {
-                if (this.isTalking) {
-                    this.isTalking = false;
-                    this.updateAvatar();
-                }
+                this.isTalking = false;
+            }
+
+            // Only update avatar if state changed
+            if (wasTalking !== this.isTalking) {
+                this.updateAvatar();
             }
 
             this.animationFrame = requestAnimationFrame(check);
         };
 
         check();
+    }
+
+    // ========================================
+    // Blink Animation
+    // ========================================
+
+    startBlinkAnimation() {
+        const blink = () => {
+            const now = Date.now();
+            const timeSinceLastBlink = now - this.lastBlinkTime;
+
+            // Randomize blink interval (3-7 seconds)
+            const randomInterval = 3000 + Math.random() * 4000;
+
+            if (timeSinceLastBlink > randomInterval && !this.isTalking) {
+                this.doBlink();
+                this.lastBlinkTime = now;
+            }
+
+            if (this.blinkEnabled) {
+                requestAnimationFrame(blink);
+            }
+        };
+
+        blink();
+    }
+
+    doBlink() {
+        // Quick opacity animation to simulate blink
+        const originalOpacity = this.avatarElement.style.opacity || '1';
+
+        this.avatarElement.style.opacity = '0.3';
+        setTimeout(() => {
+            this.avatarElement.style.opacity = originalOpacity;
+        }, 100);
     }
 
     // ========================================

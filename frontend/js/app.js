@@ -1,5 +1,5 @@
 // ========================================
-// EchoSprite App Logic
+// EchoSprite App Logic - Enhanced Professional Version
 // ========================================
 
 class EchoSpriteApp {
@@ -12,6 +12,8 @@ class EchoSpriteApp {
         this.analyser = null;
         this.sensitivity = 30;
         this.animationFrame = null;
+        this.api = new EchoSpriteAPI();
+        this.cloudId = null;
 
         this.init();
     }
@@ -25,6 +27,23 @@ class EchoSpriteApp {
         this.setupMicControls();
         this.setupSensitivity();
         this.setupOBSUrl();
+        this.setupCloudSave();
+
+        // Check for URL parameters (loading from cloud)
+        this.checkURLParams();
+    }
+
+    // ========================================
+    // URL Parameter Handling
+    // ========================================
+
+    async checkURLParams() {
+        const params = new URLSearchParams(window.location.search);
+        const loadId = params.get('load');
+
+        if (loadId) {
+            await this.loadFromCloud(loadId);
+        }
     }
 
     // ========================================
@@ -43,6 +62,19 @@ class EchoSpriteApp {
         const file = event.target.files[0];
         if (!file) return;
 
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            this.showToast('Please upload an image file', 'error');
+            return;
+        }
+
+        // Validate file size (10MB max)
+        const maxSize = 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+            this.showToast('Image must be smaller than 10MB', 'error');
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = (e) => {
             const imageData = e.target.result;
@@ -51,10 +83,12 @@ class EchoSpriteApp {
                 this.idleImage = imageData;
                 localStorage.setItem('echosprite_idle', imageData);
                 this.updatePreview('idlePreview', imageData);
+                this.showToast('Idle image uploaded!', 'success');
             } else {
                 this.talkingImage = imageData;
                 localStorage.setItem('echosprite_talking', imageData);
                 this.updatePreview('talkingPreview', imageData);
+                this.showToast('Talking image uploaded!', 'success');
             }
 
             this.updateAvatarPreview();
@@ -65,7 +99,7 @@ class EchoSpriteApp {
 
     updatePreview(elementId, imageData) {
         const preview = document.getElementById(elementId);
-        preview.innerHTML = `<img src="${imageData}" alt="Avatar">`;
+        preview.innerHTML = `<img src="${imageData}" alt="Avatar" class="fade-in">`;
     }
 
     loadSavedImages() {
@@ -92,7 +126,7 @@ class EchoSpriteApp {
 
         const currentImage = this.isTalking ? (this.talkingImage || this.idleImage) : this.idleImage;
         if (currentImage) {
-            preview.innerHTML = `<img src="${currentImage}" alt="Avatar Preview">`;
+            preview.innerHTML = `<img src="${currentImage}" alt="Avatar Preview" class="fade-in">`;
         }
     }
 
@@ -129,12 +163,14 @@ class EchoSpriteApp {
             document.getElementById('statusText').textContent = 'Listening...';
             document.getElementById('statusText').classList.add('listening');
 
+            this.showToast('Microphone activated!', 'success');
+
             // Start monitoring
             this.monitorMic(dataArray);
 
         } catch (error) {
             console.error('Microphone access denied:', error);
-            alert('Could not access microphone. Please check your browser permissions.');
+            this.showToast('Could not access microphone. Please check permissions.', 'error');
         }
     }
 
@@ -205,6 +241,8 @@ class EchoSpriteApp {
         document.getElementById('micLevel').style.width = '0%';
         this.isTalking = false;
         this.updateAvatarPreview();
+
+        this.showToast('Microphone deactivated', 'success');
     }
 
     // ========================================
@@ -242,12 +280,17 @@ class EchoSpriteApp {
 
     updateOBSUrl() {
         const baseUrl = window.location.origin + window.location.pathname.replace('app.html', '');
-        const viewerUrl = `${baseUrl}viewer.html?mode=live`;
+        let viewerUrl = `${baseUrl}viewer.html?mode=live`;
+
+        // If we have a cloud ID, use that instead of localStorage
+        if (this.cloudId) {
+            viewerUrl = `${baseUrl}viewer.html?id=${this.cloudId}`;
+        }
 
         const urlInput = document.getElementById('obsUrl');
         const previewLink = document.getElementById('previewLink');
 
-        if (this.idleImage || this.talkingImage) {
+        if (this.idleImage || this.talkingImage || this.cloudId) {
             urlInput.value = viewerUrl;
             previewLink.href = viewerUrl;
             previewLink.style.display = 'inline-block';
@@ -262,12 +305,140 @@ class EchoSpriteApp {
         urlInput.select();
         document.execCommand('copy');
 
-        const btn = document.getElementById('copyUrl');
-        const originalText = btn.textContent;
-        btn.textContent = 'Copied!';
+        this.showToast('OBS URL copied to clipboard!', 'success');
+    }
+
+    // ========================================
+    // Cloud Save & Load
+    // ========================================
+
+    setupCloudSave() {
+        const saveBtn = document.getElementById('saveToCloud');
+        const copyShareBtn = document.getElementById('copyShareUrl');
+
+        saveBtn.addEventListener('click', () => this.saveToCloud());
+        copyShareBtn.addEventListener('click', () => this.copyShareUrl());
+    }
+
+    async saveToCloud() {
+        if (!this.idleImage && !this.talkingImage) {
+            this.showToast('Please upload at least one image first', 'error');
+            return;
+        }
+
+        this.showLoading('Saving to cloud...');
+
+        try {
+            const config = {
+                idleImage: this.idleImage,
+                talkingImage: this.talkingImage,
+                sensitivity: this.sensitivity
+            };
+
+            const response = await this.api.saveConfig(config);
+
+            if (response.success) {
+                this.cloudId = response.publicId;
+                localStorage.setItem('echosprite_cloud_id', this.cloudId);
+
+                // Update OBS URL to use cloud ID
+                this.updateOBSUrl();
+
+                // Show share URL
+                const baseUrl = window.location.origin + window.location.pathname.replace('app.html', '');
+                const shareUrl = `${baseUrl}viewer.html?id=${this.cloudId}`;
+
+                document.getElementById('shareUrl').value = shareUrl;
+                document.getElementById('cloudInfo').style.display = 'block';
+
+                this.hideLoading();
+                this.showToast('✅ Saved to cloud successfully!', 'success');
+            }
+        } catch (error) {
+            this.hideLoading();
+            this.showToast(`Failed to save: ${error.message}`, 'error');
+            console.error('Save error:', error);
+        }
+    }
+
+    async loadFromCloud(publicId) {
+        this.showLoading('Loading from cloud...');
+
+        try {
+            const response = await this.api.getConfig(publicId);
+
+            if (response.success && response.config) {
+                const config = response.config;
+
+                // Load images
+                if (config.idleImage) {
+                    this.idleImage = config.idleImage;
+                    localStorage.setItem('echosprite_idle', config.idleImage);
+                    this.updatePreview('idlePreview', config.idleImage);
+                }
+
+                if (config.talkingImage) {
+                    this.talkingImage = config.talkingImage;
+                    localStorage.setItem('echosprite_talking', config.talkingImage);
+                    this.updatePreview('talkingPreview', config.talkingImage);
+                }
+
+                // Load sensitivity
+                if (config.sensitivity) {
+                    this.sensitivity = config.sensitivity;
+                    localStorage.setItem('echosprite_sensitivity', config.sensitivity);
+                    document.getElementById('sensitivity').value = config.sensitivity;
+                    document.getElementById('sensitivityValue').textContent = config.sensitivity;
+                }
+
+                this.cloudId = publicId;
+                localStorage.setItem('echosprite_cloud_id', publicId);
+
+                this.updateAvatarPreview();
+                this.updateOBSUrl();
+
+                this.hideLoading();
+                this.showToast('✅ Loaded from cloud successfully!', 'success');
+            }
+        } catch (error) {
+            this.hideLoading();
+            this.showToast(`Failed to load: ${error.message}`, 'error');
+            console.error('Load error:', error);
+        }
+    }
+
+    copyShareUrl() {
+        const urlInput = document.getElementById('shareUrl');
+        urlInput.select();
+        document.execCommand('copy');
+
+        this.showToast('Share URL copied to clipboard!', 'success');
+    }
+
+    // ========================================
+    // UI Helpers
+    // ========================================
+
+    showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = 'toast show ' + type;
+
         setTimeout(() => {
-            btn.textContent = originalText;
-        }, 2000);
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    showLoading(message = 'Loading...') {
+        const overlay = document.getElementById('loadingOverlay');
+        const textEl = overlay.querySelector('p');
+        if (textEl) textEl.textContent = message;
+        overlay.style.display = 'flex';
+    }
+
+    hideLoading() {
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.style.display = 'none';
     }
 }
 

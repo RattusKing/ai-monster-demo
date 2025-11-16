@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoSprite - Dashboard</title>
+    <meta name="description" content="Upload your avatar PNGs and create reactive VTuber setups for OBS streaming.">
+    <meta name="robots" content="noindex">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="app-page">
@@ -82,9 +87,41 @@
                 </p>
                 <a href="#" id="previewLink" target="_blank" class="btn btn-secondary" style="display: none;">Preview in New Tab</a>
             </section>
+
+            <!-- Step 4: Cloud Save & Share -->
+            <section class="card">
+                <h2>☁️ Step 4: Save & Share (Optional)</h2>
+                <p>Save your avatar to the cloud and get a shareable URL that works on any device!</p>
+                <div class="cloud-controls">
+                    <button id="saveToCloud" class="btn btn-primary">💾 Save to Cloud</button>
+                    <div class="cloud-info" id="cloudInfo" style="display: none;">
+                        <p class="success-message">✅ Saved! Your shareable URL:</p>
+                        <div class="url-box">
+                            <input type="text" id="shareUrl" readonly value="">
+                            <button id="copyShareUrl" class="btn btn-primary">Copy</button>
+                        </div>
+                        <p class="help-text">
+                            💡 This URL works anywhere - share it with friends or use it on different devices!<br>
+                            Save this URL to access your avatar anytime.
+                        </p>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Saving to cloud...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
