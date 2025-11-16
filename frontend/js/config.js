@@ -6,11 +6,19 @@ const CONFIG = {
     // API Base URL - automatically detects environment
     API_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://localhost:3000'
-        : 'https://ai-monster-demo.onrender.com', // Your live Render API
+        : 'https://echosprite.onrender.com', // Your live Render API
+
+    // WebSocket URL for real-time updates
+    WS_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'ws://localhost:3001'
+        : 'wss://echosprite.onrender.com:3001',
 
     // Feature flags
     FEATURES: {
         CLOUD_SAVE: true,
+        DISCORD_LOGIN: true,
+        DISCORD_BOT: true,
+        GROUP_VIEWER: true,
         BLINK_ANIMATION: true,
         BOUNCE_EFFECT: true,
         ADVANCED_SETTINGS: true

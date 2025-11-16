@@ -76,6 +76,95 @@ class EchoSpriteAPI {
             return false;
         }
     }
+
+    // ========================================
+    // Discord Integration Methods
+    // ========================================
+
+    async getMe() {
+        try {
+            const response = await fetch(`${this.baseURL}/auth/me`, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                return null;
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('API Error (getMe):', error);
+            return null;
+        }
+    }
+
+    async logout() {
+        try {
+            const response = await fetch(`${this.baseURL}/auth/logout`, {
+                credentials: 'include'
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('API Error (logout):', error);
+            throw error;
+        }
+    }
+
+    async uploadAvatar(avatarData) {
+        try {
+            const response = await fetch(`${this.baseURL}/api/avatar`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(avatarData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to upload avatar');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('API Error (uploadAvatar):', error);
+            throw error;
+        }
+    }
+
+    async getAvatar(discordId) {
+        try {
+            const response = await fetch(`${this.baseURL}/api/avatar/${discordId}`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to load avatar');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('API Error (getAvatar):', error);
+            throw error;
+        }
+    }
+
+    async getChannelMembers(channelId) {
+        try {
+            const response = await fetch(`${this.baseURL}/api/channel/${channelId}/members`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to load channel members');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('API Error (getChannelMembers):', error);
+            throw error;
+        }
+    }
 }
 
 // Export API client
