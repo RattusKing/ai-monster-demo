@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoSprite - Dashboard</title>
+    <meta name="description" content="Upload your avatar PNGs and create reactive VTuber setups for OBS streaming.">
+    <meta name="robots" content="noindex">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="app-page">
+    <div class="container">
+        <header class="app-header">
+            <h1 class="logo">✨ EchoSprite</h1>
+            <nav>
+                <span id="userInfo" class="user-info"></span>
+                <a href="index.html" class="btn btn-text">Home</a>
+                <button id="logoutBtn" class="btn btn-text" style="display: none;">Logout</button>
+            </nav>
+        </header>
+
+        <main class="dashboard">
+            <!-- Step 1: Upload 4 Avatar States -->
+            <section class="card">
+                <h2>📸 Step 1: Upload Your Avatar (4 States)</h2>
+                <div class="upload-grid-4">
+                    <!-- Idle State -->
+                    <div class="upload-box">
+                        <label for="idleUpload" class="upload-label">
+                            <div class="upload-preview" id="idlePreview">
+                                <p>😌<br><strong>Idle</strong><br>Not speaking</p>
+                            </div>
+                        </label>
+                        <input type="file" id="idleUpload" accept="image/png,image/jpg,image/jpeg" style="display: none;">
+                    </div>
+
+                    <!-- Talking State -->
+                    <div class="upload-box">
+                        <label for="talkingUpload" class="upload-label">
+                            <div class="upload-preview" id="talkingPreview">
+                                <p>🎙️<br><strong>Talking</strong><br>Voice active</p>
+                            </div>
+                        </label>
+                        <input type="file" id="talkingUpload" accept="image/png,image/jpg,image/jpeg" style="display: none;">
+                    </div>
+
+                    <!-- Muted State -->
+                    <div class="upload-box">
+                        <label for="mutedUpload" class="upload-label">
+                            <div class="upload-preview" id="mutedPreview">
+                                <p>🔇<br><strong>Muted</strong><br>Mic off</p>
+                            </div>
+                        </label>
+                        <input type="file" id="mutedUpload" accept="image/png,image/jpg,image/jpeg" style="display: none;">
+                    </div>
+
+                    <!-- Deafened State -->
+                    <div class="upload-box">
+                        <label for="deafenedUpload" class="upload-label">
+                            <div class="upload-preview" id="deafenedPreview">
+                                <p>🔊<br><strong>Deafened</strong><br>Audio off</p>
+                            </div>
+                        </label>
+                        <input type="file" id="deafenedUpload" accept="image/png,image/jpg,image/jpeg" style="display: none;">
+                    </div>
+                </div>
+                <p class="help-text">💡 Tip: Use transparent PNGs for best results! At least idle and talking are required.</p>
+            </section>
+
+            <!-- Step 2: Test Preview -->
+            <section class="card">
+                <h2>👀 Step 2: Preview States</h2>
+                <div class="preview-states">
+                    <div class="avatar-preview-large" id="avatarPreviewLarge">
+                        <p class="placeholder-text">Your avatar will appear here</p>
+                    </div>
+                    <div class="state-switcher">
+                        <button class="state-btn active" data-state="idle">😌 Idle</button>
+                        <button class="state-btn" data-state="talking">🎙️ Talking</button>
+                        <button class="state-btn" data-state="muted">🔇 Muted</button>
+                        <button class="state-btn" data-state="deafened">🔊 Deafened</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 3: Test Mic (Guest Mode) or Discord Info (Discord Mode) -->
+            <section class="card" id="modeSection">
+                <!-- Content loaded dynamically -->
+            </section>
+
+            <!-- Step 4: Get Your Links -->
+            <section class="card">
+                <h2>📺 Step 4: Get Your Browser Source URLs</h2>
+
+                <!-- Individual Link -->
+                <div class="link-section">
+                    <h3>Individual Viewer</h3>
+                    <p>Your personal avatar - reacts to Discord voice or local mic</p>
+                    <div class="url-box">
+                        <input type="text" id="individualUrl" readonly value="">
+                        <button id="copyIndividualUrl" class="btn btn-primary">Copy</button>
+                    </div>
+                    <a href="#" id="previewIndividualLink" target="_blank" class="btn btn-secondary" style="display: none;">Preview</a>
+                </div>
+
+                <!-- Group Link (Discord Only) -->
+                <div class="link-section" id="groupLinkSection" style="display: none;">
+                    <h3>Group Viewer (Discord Only)</h3>
+                    <p>Shows everyone in your Discord voice channel</p>
+                    <div class="url-box">
+                        <input type="text" id="groupUrl" readonly value="">
+                        <button id="copyGroupUrl" class="btn btn-primary">Copy</button>
+                    </div>
+                    <p class="help-text">
+                        📝 Note: You need to be in a Discord voice channel to generate a group link.
+                        Join a voice channel, then refresh this page.
+                    </p>
+                    <a href="#" id="previewGroupLink" target="_blank" class="btn btn-secondary" style="display: none;">Preview</a>
+                </div>
+
+                <div class="obs-help">
+                    <h4>🎥 How to add to OBS:</h4>
+                    <ol>
+                        <li>Sources → Add → Browser</li>
+                        <li>Paste your URL</li>
+                        <li>Set size: 1920x1080</li>
+                        <li>Check "Shutdown source when not visible"</li>
+                        <li>Done! Your avatar will react automatically</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- Step 5: Settings -->
+            <section class="card">
+                <h2>⚙️ Step 5: Settings</h2>
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="showNames" checked>
+                            Show Names (Group Viewer)
+                        </label>
+                    </div>
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="includeSelf">
+                            Include Yourself in Group View
+                        </label>
+                    </div>
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="dimInactive" checked>
+                            Dim Inactive Users
+                        </label>
+                    </div>
+                    <div class="setting-group">
+                        <label>
+                            Animation:
+                            <select id="animationStyle">
+                                <option value="none">None</option>
+                                <option value="bounce" selected>Bounce</option>
+                                <option value="fade">Fade</option>
+                                <option value="slide">Slide</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="setting-group">
+                        <label>
+                            Spacing:
+                            <input type="range" id="spacing" min="0" max="100" value="20">
+                            <span id="spacingValue">20px</span>
+                        </label>
+                    </div>
+                    <div class="setting-group">
+                        <label>
+                            Mic Sensitivity:
+                            <input type="range" id="sensitivity" min="0" max="100" value="30">
+                            <span id="sensitivityValue">30</span>
+                        </label>
+                    </div>
+                </div>
+                <button id="saveSettings" class="btn btn-primary">Save Settings</button>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app-discord.js"></script>
+</body>
+</html>
