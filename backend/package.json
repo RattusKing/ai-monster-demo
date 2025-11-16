@@ -4,7 +4,7 @@
   "description": "Backend API for EchoSprite VTuber avatar tool",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node startup.js",
     "dev": "node server.js",
     "migrate": "node migrations/run.js",
     "register-commands": "node register-commands.js"
