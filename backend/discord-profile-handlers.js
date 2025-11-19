@@ -87,8 +87,6 @@ function createInfoEmbed(title, description, fields = []) {
 // ========================================
 
 async function handleProfileCreate(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const username = interaction.user.username;
@@ -166,8 +164,6 @@ async function handleProfileCreate(interaction) {
 }
 
 async function handleProfileUpload(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const username = interaction.user.username;
@@ -261,8 +257,6 @@ async function handleProfileUpload(interaction) {
 }
 
 async function handleProfileList(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const user = await db.users.findByDiscordId(userId);
@@ -318,8 +312,6 @@ async function handleProfileList(interaction) {
 }
 
 async function handleProfileSwitch(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const profileName = interaction.options.getString('profile');
@@ -384,8 +376,6 @@ async function handleProfileSwitch(interaction) {
 }
 
 async function handleProfileUrl(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const profileName = interaction.options.getString('profile');
@@ -451,8 +441,6 @@ async function handleProfileUrl(interaction) {
 }
 
 async function handleProfileDelete(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const profileName = interaction.options.getString('profile');
@@ -526,8 +514,6 @@ async function handleProfileDelete(interaction) {
 }
 
 async function handleProfileRename(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const oldName = interaction.options.getString('old');
