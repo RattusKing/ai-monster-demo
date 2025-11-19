@@ -87,8 +87,6 @@ function createInfoEmbed(title, description, fields = []) {
 // ========================================
 
 async function handleAvatarUpload(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const username = interaction.user.username;
@@ -175,8 +173,6 @@ async function handleAvatarUpload(interaction) {
 }
 
 async function handleAvatarView(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const avatar = await db.avatars.findByDiscordId(userId);
@@ -214,8 +210,6 @@ async function handleAvatarView(interaction) {
 }
 
 async function handleAvatarUrl(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const avatar = await db.avatars.findByDiscordId(userId);
@@ -256,8 +250,6 @@ async function handleAvatarUrl(interaction) {
 }
 
 async function handleAvatarDelete(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const user = await db.users.findByDiscordId(userId);
@@ -302,8 +294,6 @@ async function handleAvatarDelete(interaction) {
 // ========================================
 
 async function handleChannelUrl(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         // Check if user is in a voice channel
         const member = interaction.member;
@@ -347,8 +337,6 @@ async function handleChannelUrl(interaction) {
 }
 
 async function handleChannelPreview(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const member = interaction.member;
         const voiceChannel = member.voice.channel;
@@ -398,8 +386,6 @@ async function handleChannelMembers(interaction) {
 // ========================================
 
 async function handleSettingsView(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const avatar = await db.avatars.findByDiscordId(userId);
@@ -440,8 +426,6 @@ async function handleSettingsView(interaction) {
 }
 
 async function handleSettingsUpdate(interaction, settingName, value) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         const userId = interaction.user.id;
         const user = await db.users.findByDiscordId(userId);
@@ -501,8 +485,6 @@ async function handleSettingsUpdate(interaction, settingName, value) {
 // ========================================
 
 async function handleHelp(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     const embed = new EmbedBuilder()
         .setColor(0x8a2be2)
         .setTitle('🎮 EchoSprite - Discord Commands')
@@ -526,8 +508,6 @@ async function handleHelp(interaction) {
 // ========================================
 
 async function handleStatus(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
         // Check backend health
         const apiUrl = process.env.API_URL || 'http://localhost:3000';
@@ -572,6 +552,12 @@ async function handleSlashCommand(interaction) {
     const { commandName } = interaction;
 
     try {
+        // Defer reply immediately to prevent timeout (Discord requires response within 3 seconds)
+        // Individual handlers will edit this deferred reply
+        if (!interaction.deferred && !interaction.replied) {
+            await interaction.deferReply({ ephemeral: true });
+        }
+
         if (commandName === 'avatar') {
             const subcommand = interaction.options.getSubcommand();
 
